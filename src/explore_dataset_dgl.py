@@ -18,6 +18,10 @@ print("########## DATASET ##########")
 print(dataset)
 print("Number of graphs: ", dataset.num_graphs)
 print("Number of classes: ", dataset.num_classes)
+print("Number of features per node: ", dataset.feature.shape[1])
+print("Train split: ", dataset.train_mask.sum().item())
+print("Validation split: ", dataset.val_mask.sum().item())
+print("Test split: ", dataset.test_mask.sum().item())
 
 # Print distribution of labels
 labels = dataset.labels
@@ -73,8 +77,8 @@ graph = dataset[graph_index][0]
 print(graph)
 print("Number of nodes: ", graph.number_of_nodes())
 print("Number of edges: ", graph.number_of_edges())
-print("Node features: ", graph.ntypes)
-print("Edge features: ", graph.etypes)
+print("Node types: ", graph.ntypes)
+print("Edge types: ", graph.etypes)
 
 # Draw the graph
 nx_graph = graph.to_networkx()
