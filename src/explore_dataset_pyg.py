@@ -1,4 +1,4 @@
-# Code for the experiments
+# Corrupted dataset
 
 from torch_geometric.datasets import UPFD, TUDataset
 from torch_geometric.loader import DataLoader
