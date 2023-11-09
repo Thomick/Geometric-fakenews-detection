@@ -12,7 +12,7 @@ import torch
 from dgl.data import FakeNewsDataset
 from dgl.dataloading import GraphDataLoader
 
-from . import model, eval
+import model, eval
 from model import GCNFN
 from eval import evaluate
 
@@ -20,15 +20,14 @@ from eval import evaluate
 # Train the model for one epoch
 def train_one_epoch(model, loader, optimizer, loss_fn):
     losses = []
-    for data in loader:
+    for graph, labels in loader:  # Unpack the graph and labels from your data list
         optimizer.zero_grad()
-        out = model(data)
-        loss = loss_fn(out, data.y)
+        print(type(graph))
+        out = model(graph)  
+        loss = loss_fn(out, labels)
         loss.backward()
         optimizer.step()
-
         losses.append(loss.item())
-
     return sum(losses) / len(losses)
 
 
@@ -39,7 +38,7 @@ def train(model, loader, optimizer, loss_fn):
     val_losses = []
 
     for epoch in range(args.epochs):
-        train_loss = train(model, train_loader, optimizer, loss_fn)
+        train_loss = train_one_epoch(model, train_loader, optimizer, loss_fn)
         val_loss = model.evaluate(val_loader, loss_fn)
 
         train_losses.append(train_loss)
@@ -80,9 +79,16 @@ if __name__ == "__main__":
     dataset = FakeNewsDataset(args.dataset, "content", path)
 
     # Split the dataset
-    train_dataset = dataset[dataset.train_mask]
-    val_dataset = dataset[dataset.val_mask]
-    test_dataset = dataset[dataset.test_mask]
+
+    #transform dataset.train_mask to integers tensor
+    train_indices = torch.nonzero(dataset.train_mask).squeeze()
+    val_indices = torch.nonzero(dataset.val_mask).squeeze()
+    test_indices = torch.nonzero(dataset.test_mask).squeeze()
+
+
+    train_dataset = [dataset[idx] for idx in train_indices]
+    val_dataset = [dataset[idx] for idx in val_indices]
+    test_dataset = [dataset[idx] for idx in test_indices]
 
     # Create the data loaders
     train_loader = GraphDataLoader(
@@ -94,12 +100,16 @@ if __name__ == "__main__":
     )
 
     # Create the model
-    other_args = {}
-    model = GCNFN(dataset.num_features, dataset.num_classes, other_args)
+    other_args = {'n_classes': 2}
+
+    #print dataset attributes
+    #print(dir(dataset))
+
+    model = GCNFN(dataset.feature.shape[1], dataset.num_classes, other_args['n_classes'])
 
     # Train the model
     optimizer = torch.optim.Adam(model.parameters())
-    loss_fn = torch.nn.CrossEntropyLoss()
+    loss_fn = torch.nn.HingeEmbeddingLoss()
 
     train_losses, val_losses = train(model, train_loader, optimizer, loss_fn)
 
