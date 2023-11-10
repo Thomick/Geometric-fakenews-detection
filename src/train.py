@@ -22,7 +22,10 @@ def train_one_epoch(model, loader, optimizer, loss_fn):
     losses = []
     for graph, labels in loader:  # Unpack the graph and labels from your data list
         optimizer.zero_grad()
-        print(type(graph))
+        #print info on graphs
+        #for key in graph.ndata:
+        #    print(key)
+
         out = model(graph)  
         loss = loss_fn(out, labels)
         loss.backward()
@@ -77,7 +80,12 @@ if __name__ == "__main__":
         os.path.dirname(os.path.realpath(__file__)), "..", "data", "FakeNews"
     )
     dataset = FakeNewsDataset(args.dataset, "content", path)
+    # Debugging: Check the first graph in the dataset
+    first_graph, _ = dataset[0]  # Unpack the first item into graph and label
 
+    # Now you can access the ndata of the first graph
+    for key in first_graph.ndata:
+        print(f"Key: {key}, Shape: {first_graph.ndata[key].shape}")
     # Split the dataset
 
     #transform dataset.train_mask to integers tensor
@@ -89,7 +97,25 @@ if __name__ == "__main__":
     train_dataset = [dataset[idx] for idx in train_indices]
     val_dataset = [dataset[idx] for idx in val_indices]
     test_dataset = [dataset[idx] for idx in test_indices]
+    
+    '''def assign_features(graph, features, indices):
+        graph_features = features[indices]  # Slice the features for the nodes in this graph
+        graph.ndata['feat'] = graph_features
+        return graph
 
+    # Modify dataset creation
+    train_dataset = [
+        (assign_features(dataset[idx][0], dataset.feature, dataset[idx][0].ndata['_ID']), dataset[idx][1]) 
+        for idx in train_indices
+    ]
+    val_dataset = [
+        (assign_features(dataset[idx][0], dataset.feature, dataset[idx][0].ndata['_ID']), dataset[idx][1]) 
+        for idx in val_indices
+    ]
+    test_dataset = [
+        (assign_features(dataset[idx][0], dataset.feature, dataset[idx][0].ndata['_ID']), dataset[idx][1]) 
+        for idx in test_indices
+    ]'''
     # Create the data loaders
     train_loader = GraphDataLoader(
         train_dataset, batch_size=args.batch_size, shuffle=True
@@ -100,12 +126,10 @@ if __name__ == "__main__":
     )
 
     # Create the model
-    other_args = {'n_classes': 2}
+    other_args = {'n_hidden': 64}
 
-    #print dataset attributes
     #print(dir(dataset))
-
-    model = GCNFN(dataset.feature.shape[1], dataset.num_classes, other_args['n_classes'])
+    model = GCNFN(dataset.feature.shape[1], other_args["n_hidden"], dataset.num_classes)
 
     # Train the model
     optimizer = torch.optim.Adam(model.parameters())
