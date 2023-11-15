@@ -14,7 +14,7 @@ import torch.nn as nn
 
 import dgl
 import dgl.function as fn
-from dgl.nn import GATConv
+from dgl.nn import GATConv, AvgPooling
 
 import os
 
@@ -24,34 +24,43 @@ os.environ["DGLBACKEND"] = "pytorch"
 class GCNFN(nn.Module):
     def __init__(self, in_channels, n_hidden, n_classes):
         super(GCNFN, self).__init__()
-        print(in_channels)
-        self.conv1 = GATConv(in_channels, n_hidden, num_heads=1) #GATConv applies graph attention 
+        print('n_hidden: ', n_hidden)
+        print('in_channels: ', in_channels)
+        self.conv1 = GATConv(in_channels, n_hidden, num_heads=1) #GATConv applies graph attention. num_heads adds a dimension, which we remove by applying squeeze in the forward
         self.conv2 = GATConv(n_hidden, n_hidden, num_heads=1)
-        #print("n_hidden: ", n_hidden)
-        #print("n_hidden/2: ", n_hidden/2) 
         self.fc1 = nn.Linear(n_hidden, int(n_hidden/2)) 
         self.fc2 = nn.Linear(int(n_hidden/2), n_classes) 
         self.selu = nn.SELU() 
+        self.log_softmax = nn.LogSoftmax(dim=1)
 
-    def forward(self, g):
+    def forward(self, g, x):
         #print(g.ndata)
         with g.local_scope(): # To avoid changes to the original graph
             g = dgl.add_self_loop(g) # Add self loops
-            x = g.ndata['_ID']  # Access the node features
-            print('x.shape', x.shape)
             edge_index = g.edges()
-
+            print("x input shape: ", x.shape)
             # Layer 1 GatConv with SELU non linearity
-            x = self.selu(self.conv1(g, x)) # dimension: N,64
+            #turn x to float
+            x = x.float()
+            x = self.selu(self.conv1(g, x).squeeze(1)) # dimension: N,64
+            print("x shape after conv1+selu layer", x.shape)
+
             # Layer 2 GatConv with SELU non linearity 
-            x = self.selu(self.conv2(g, x)) # N,64
+            x = self.selu(self.conv2(g, x).squeeze(1)) # N,64
+            print("x shape after conv2+activation selu layer", x.shape)
+            # Store the convolved features back into the graph
+            g.ndata['h'] = x.float()
+            #turn 
             # Mean Pooling
-            x = torch.mean(x, batch) # 1,64
-            
+            x = dgl.mean_nodes(g, 'h') # batch_size, 64
+            print("x shape after mean pooling", x.shape)
             # Layer 3 fully connected with SELU non linearity
-            x = self.selu(self.fc1(x)) # 1,32
+            x = self.selu(self.fc1(x)) # 32,1
+            print("x shape after fully connected layer 3+activation selu layer", x.shape)
             # Layer 4 fully connected
-            x = self.fc2(x) # 1,2
+            x = self.fc2(x) # 2,1
+            print("x shape after fully connected layer 4", x.shape)
             #soft max
-            return self.log_softmax(x, dim=-1) # 1,2
+            print("x shape after log softmax", self.log_softmax(x).shape)
+            return self.log_softmax(x).transpose(1,0) # 1,2
 

@@ -12,21 +12,18 @@ import torch
 from dgl.data import FakeNewsDataset
 from dgl.dataloading import GraphDataLoader
 
-import model, eval
+import model, evaluation
 from model import GCNFN
-from eval import evaluate
+from evaluation import evaluate
 
 
 # Train the model for one epoch
-def train_one_epoch(model, loader, optimizer, loss_fn):
+def train_one_epoch(model, train_loader, optimizer, loss_fn):
     losses = []
-    for graph, labels in loader:  # Unpack the graph and labels from your data list
+    for graph, labels in train_loader:  # Unpack the graph and labels from your data list
         optimizer.zero_grad()
-        #print info on graphs
-        #for key in graph.ndata:
-        #    print(key)
-
-        out = model(graph)  
+        features = dataset.feature[graph.ndata['_ID']]
+        out = model(graph, features)  
         loss = loss_fn(out, labels)
         loss.backward()
         optimizer.step()
@@ -40,9 +37,9 @@ def train(model, loader, optimizer, loss_fn):
     train_losses = []
     val_losses = []
 
-    for epoch in range(args.epochs):
-        train_loss = train_one_epoch(model, train_loader, optimizer, loss_fn)
-        val_loss = model.evaluate(val_loader, loss_fn)
+    for epoch in range(args.epochs): # 100 by default
+        train_loss = train_one_epoch(model, loader, optimizer, loss_fn)
+        val_loss = evaluate(dataset, model, val_loader)
 
         train_losses.append(train_loss)
         val_losses.append(val_loss)
@@ -79,13 +76,9 @@ if __name__ == "__main__":
     path = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), "..", "data", "FakeNews"
     )
-    dataset = FakeNewsDataset(args.dataset, "content", path)
-    # Debugging: Check the first graph in the dataset
-    first_graph, _ = dataset[0]  # Unpack the first item into graph and label
 
-    # Now you can access the ndata of the first graph
-    for key in first_graph.ndata:
-        print(f"Key: {key}, Shape: {first_graph.ndata[key].shape}")
+    dataset = FakeNewsDataset(args.dataset, "content", path)
+
     # Split the dataset
 
     #transform dataset.train_mask to integers tensor
@@ -116,19 +109,18 @@ if __name__ == "__main__":
         (assign_features(dataset[idx][0], dataset.feature, dataset[idx][0].ndata['_ID']), dataset[idx][1]) 
         for idx in test_indices
     ]'''
+
     # Create the data loaders
-    train_loader = GraphDataLoader(
-        train_dataset, batch_size=args.batch_size, shuffle=True
-    )
+    train_loader = GraphDataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
     val_loader = GraphDataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
-    test_loader = GraphDataLoader(
-        test_dataset, batch_size=args.batch_size, shuffle=False
-    )
+    test_loader = GraphDataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
 
     # Create the model
     other_args = {'n_hidden': 64}
 
-    #print(dir(dataset))
+    #print(dir(dataset)) 
+    #dataset.feature.shape[1] renvoie le nombre de features
+    #other_args["n_hidden"] renvoie le nombre de neurones de la première couche du réseau
     model = GCNFN(dataset.feature.shape[1], other_args["n_hidden"], dataset.num_classes)
 
     # Train the model
@@ -155,5 +147,5 @@ if __name__ == "__main__":
     plt.show()
 
     # Evaluate the model on the test set
-    acc = evaluate(model, test_loader)
+    acc = evaluate(dataset, model, test_loader)
     print("Accuracy: {:.4f}".format(acc))

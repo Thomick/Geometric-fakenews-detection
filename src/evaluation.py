@@ -9,14 +9,17 @@ from dgl.dataloading import GraphDataLoader
 import torch
 
 
-def evaluate(model, loader):
+def evaluate(dataset, model, loader):
     model.eval()
 
     correct = 0
-    for data in loader:
-        out = model(data)
-        pred = out.argmax(dim=1)
-        correct += int((pred == data.y).sum())
+    for graph, labels in loader:
+        features = dataset.feature[graph.ndata['_ID']]
+        out = model(graph, features)
+        pred = out.argmax(dim=1) #argmax returns the indices of the maximum values along an axis
+        print("pred shape : ", pred.shape)
+        print("labels shape : ", labels.shape)
+        correct += int((pred == labels).sum())
 
     return correct / len(loader.dataset)
 
