@@ -26,6 +26,8 @@ def train_one_epoch(model, train_loader, optimizer, loss_fn):
         #features = dataset.feature[graph.ndata['_ID']]
         x = graph.ndata['feat']
         out = model(graph, x)  
+        #turn labels into -1 and 1 
+        labels = torch.where(labels==0, -1, labels)
         loss = loss_fn(out, labels)
         loss.backward()
         optimizer.step()
@@ -55,6 +57,7 @@ def train(model, loader, optimizer, loss_fn):
 
 
 if __name__ == "__main__":
+    default_epochs = 200
     parser = argparse.ArgumentParser(description="Experiments on our models")
     parser.add_argument(
         "--dataset",
@@ -63,7 +66,7 @@ if __name__ == "__main__":
         help="Dataset to use (politifact or gossipcop)",
     )
     parser.add_argument(
-        "--epochs", type=int, default=100, help="Number of epochs to train the model"
+        "--epochs", type=int, default=default_epochs, help="Number of epochs to train the model"
     )
     parser.add_argument(
         "--batch_size", type=int, default=32, help="Batch size for the data loader"
