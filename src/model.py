@@ -24,8 +24,8 @@ os.environ["DGLBACKEND"] = "pytorch"
 class GCNFN(nn.Module):
     def __init__(self, in_channels, n_hidden, n_classes):
         super(GCNFN, self).__init__()
-        print('n_hidden: ', n_hidden)
-        print('in_channels: ', in_channels)
+        #print('n_hidden: ', n_hidden)
+        #print('in_channels: ', in_channels)
         self.conv1 = GATConv(in_channels, n_hidden, num_heads=1) #GATConv applies graph attention. num_heads adds a dimension, which we remove by applying squeeze in the forward
         self.conv2 = GATConv(n_hidden, n_hidden, num_heads=1)
         self.fc1 = nn.Linear(n_hidden, int(n_hidden/2)) 
@@ -34,10 +34,9 @@ class GCNFN(nn.Module):
         self.log_softmax = nn.LogSoftmax(dim=1)
 
     def forward(self, g, x):
+        #print data attributes
         #print(g.ndata)
         with g.local_scope(): # To avoid changes to the original graph
-            g = dgl.add_self_loop(g) # Add self loops
-            edge_index = g.edges()
             print("x input shape: ", x.shape)
             # Layer 1 GatConv with SELU non linearity
             #turn x to float
@@ -50,7 +49,7 @@ class GCNFN(nn.Module):
             print("x shape after conv2+activation selu layer", x.shape)
             # Store the convolved features back into the graph
             g.ndata['h'] = x.float()
-            #turn 
+
             # Mean Pooling
             x = dgl.mean_nodes(g, 'h') # batch_size, 64
             print("x shape after mean pooling", x.shape)

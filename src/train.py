@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import networkx as nx
 import torch
+import dgl 
 
 from dgl.data import FakeNewsDataset
 from dgl.dataloading import GraphDataLoader
@@ -22,8 +23,9 @@ def train_one_epoch(model, train_loader, optimizer, loss_fn):
     losses = []
     for graph, labels in train_loader:  # Unpack the graph and labels from your data list
         optimizer.zero_grad()
-        features = dataset.feature[graph.ndata['_ID']]
-        out = model(graph, features)  
+        #features = dataset.feature[graph.ndata['_ID']]
+        x = graph.ndata['feat']
+        out = model(graph, x)  
         loss = loss_fn(out, labels)
         loss.backward()
         optimizer.step()
@@ -86,29 +88,15 @@ if __name__ == "__main__":
     val_indices = torch.nonzero(dataset.val_mask).squeeze()
     test_indices = torch.nonzero(dataset.test_mask).squeeze()
 
-
-    train_dataset = [dataset[idx] for idx in train_indices]
-    val_dataset = [dataset[idx] for idx in val_indices]
-    test_dataset = [dataset[idx] for idx in test_indices]
-    
-    '''def assign_features(graph, features, indices):
-        graph_features = features[indices]  # Slice the features for the nodes in this graph
-        graph.ndata['feat'] = graph_features
+    def assign_features(graph, features):
+        graph_features = features[graph.ndata['_ID']]
+        graph.ndata['feat'] = graph_features # Add "feat" to graph
+        graph = dgl.add_self_loop(graph) # Add self loops
         return graph
-
-    # Modify dataset creation
-    train_dataset = [
-        (assign_features(dataset[idx][0], dataset.feature, dataset[idx][0].ndata['_ID']), dataset[idx][1]) 
-        for idx in train_indices
-    ]
-    val_dataset = [
-        (assign_features(dataset[idx][0], dataset.feature, dataset[idx][0].ndata['_ID']), dataset[idx][1]) 
-        for idx in val_indices
-    ]
-    test_dataset = [
-        (assign_features(dataset[idx][0], dataset.feature, dataset[idx][0].ndata['_ID']), dataset[idx][1]) 
-        for idx in test_indices
-    ]'''
+    
+    train_dataset = [(assign_features(dataset[idx][0], dataset.feature), dataset[idx][1]) for idx in train_indices] #assign features to train_dataset, returns a list of tuples (graph, label)
+    val_dataset = [(assign_features(dataset[idx][0], dataset.feature), dataset[idx][1]) for idx in val_indices]
+    test_dataset = [(assign_features(dataset[idx][0], dataset.feature), dataset[idx][1]) for idx in test_indices]
 
     # Create the data loaders
     train_loader = GraphDataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
