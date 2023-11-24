@@ -16,9 +16,12 @@ def evaluate(model, loader):
     for graph, labels in loader:
         features = graph.ndata["feat"]
         out = model(graph, features)
-        pred = out.argmax(
-            dim=1
-        )  # argmax returns the indices of the maximum values along an axis
+        if out.shape[-1] == 1:
+            pred = (out > 0.5).long().squeeze()
+        else:
+            pred = out.argmax(
+                dim=1
+            )  # argmax returns the indices of the maximum values along an axis
 
         # print("pred shape : ", pred.shape)
         # print("labels shape : ", labels.shape)

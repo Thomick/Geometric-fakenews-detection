@@ -15,7 +15,7 @@ from dgl.data import FakeNewsDataset
 from dgl.dataloading import GraphDataLoader
 
 import model, evaluation
-from model import GCNFN
+from model import GCNFN, ModifiedGCNFN
 from evaluation import evaluate
 
 
@@ -35,9 +35,13 @@ def train_one_epoch(model, train_loader, optimizer, loss_fn):
         # print(out)
         # turn labels into -1 and 1
         # labels = torch.where(labels == 0, -1, labels)
-        labels = labels.type(torch.LongTensor)
 
-        loss = loss_fn(out, labels)
+        if out.shape[-1] == 1:
+            out = out.squeeze()
+            loss = torch.nn.BCELoss()(out, labels.float())
+        else:
+            labels = labels.type(torch.LongTensor)
+            loss = loss_fn(out, labels)
         loss.backward()
         optimizer.step()
         losses.append(loss.item())
@@ -146,6 +150,7 @@ if __name__ == "__main__":
     # dataset.feature.shape[1] renvoie le nombre de features
     # other_args["n_hidden"] renvoie le nombre de neurones de la première couche du réseau
     model = GCNFN(dataset.feature.shape[1], other_args["n_hidden"], dataset.num_classes)
+    model = ModifiedGCNFN(dataset.feature.shape[1], other_args["n_hidden"])
 
     # Train the model
     optimizer = torch.optim.Adam(model.parameters())
