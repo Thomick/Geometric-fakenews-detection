@@ -61,5 +61,5 @@ class GCNFN(nn.Module):
             #print("x shape after fully connected layer 4", x.shape)
             #soft max
             #print("x shape after log softmax", self.log_softmax(x).shape) #1,2
-            return self.log_softmax(x).transpose(1,0) 
+            return self.log_softmax(x)#.transpose(1,0)
 

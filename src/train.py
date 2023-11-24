@@ -26,8 +26,12 @@ def train_one_epoch(model, train_loader, optimizer, loss_fn):
         #features = dataset.feature[graph.ndata['_ID']]
         x = graph.ndata['feat']
         out = model(graph, x)  
+        #print values and shape of out
+        print(out.shape)
+        print(out)
         #turn labels into -1 and 1 
         labels = torch.where(labels==0, -1, labels)
+
         loss = loss_fn(out, labels)
         loss.backward()
         optimizer.step()
@@ -116,7 +120,9 @@ if __name__ == "__main__":
 
     # Train the model
     optimizer = torch.optim.Adam(model.parameters())
-    loss_fn = torch.nn.HingeEmbeddingLoss()
+    loss_fn = torch.nn.NLLLoss()
+    #torch.nn.CrossEntropyLoss()
+    #loss_fn = torch.nn.HingeEmbeddingLoss()
 
     train_losses, val_losses = train(model, train_loader, optimizer, loss_fn)
 
