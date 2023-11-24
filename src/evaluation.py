@@ -14,11 +14,14 @@ def evaluate(dataset, model, loader):
 
     correct = 0
     for graph, labels in loader:
-        features = dataset.feature[graph.ndata['_ID']]
+        features = dataset.feature[graph.ndata["_ID"]]
         out = model(graph, features)
-        pred = out.argmax(dim=0) #argmax returns the indices of the maximum values along an axis
-        print("pred shape : ", pred.shape)
-        print("labels shape : ", labels.shape)
+        pred = out.argmax(
+            dim=1
+        )  # argmax returns the indices of the maximum values along an axis
+
+        # print("pred shape : ", pred.shape)
+        # print("labels shape : ", labels.shape)
         correct += int((pred == labels).sum())
 
     return correct / len(loader.dataset)
