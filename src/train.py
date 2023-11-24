@@ -173,8 +173,12 @@ if __name__ == "__main__":
     plt.savefig("losses.png")
 
     plt.figure()
+    test_acc = evaluate(model, test_loader)
     plt.plot(val_accs, label="Validation accuracy")
     plt.plot(train_accs, label="Train accuracy")
+    plt.axhline(
+        y=test_acc, color="r", linestyle="-", label="Test accuracy(after training)"
+    )
     plt.xlabel("Epoch")
     plt.ylabel("Accuracy")
     plt.legend()
