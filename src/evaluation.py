@@ -9,12 +9,12 @@ from dgl.dataloading import GraphDataLoader
 import torch
 
 
-def evaluate(dataset, model, loader):
+def evaluate(model, loader):
     model.eval()
 
     correct = 0
     for graph, labels in loader:
-        features = dataset.feature[graph.ndata["_ID"]]
+        features = graph.ndata["feat"]
         out = model(graph, features)
         pred = out.argmax(
             dim=1

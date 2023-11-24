@@ -9,6 +9,7 @@ import seaborn as sns
 import networkx as nx
 import torch
 import dgl
+import tqdm
 
 from dgl.data import FakeNewsDataset
 from dgl.dataloading import GraphDataLoader
@@ -44,24 +45,29 @@ def train_one_epoch(model, train_loader, optimizer, loss_fn):
 
 
 # Train the model
-def train(model, loader, optimizer, loss_fn):
+def train(model, loader, optimizer, loss_fn, val_loader=None):
     model.train()
     train_losses = []
-    val_losses = []
+    val_accs = []
+    train_accs = []
+    # Define tdqm progress bar
+    pbar = tqdm.tqdm(range(args.epochs))
 
     for epoch in range(args.epochs):  # 100 by default
         train_loss = train_one_epoch(model, loader, optimizer, loss_fn)
-        val_loss = evaluate(dataset, model, val_loader)
+        val_acc = evaluate(model, val_loader) if val_loader else None
+        train_acc = evaluate(model, loader)
 
         train_losses.append(train_loss)
-        val_losses.append(val_loss)
+        val_accs.append(val_acc)
+        train_accs.append(train_acc)
 
-        print(
-            "Epoch {:03d} train_loss: {:.4f} val_loss: {:.4f}".format(
-                epoch, train_loss, val_loss
-            )
+        # Update the progress bar with the latest metrics
+        pbar.set_postfix(
+            train_loss=train_loss, val_acc=val_acc, refresh=True, epoch=epoch
         )
-    return train_losses, val_losses
+        pbar.update()
+    return train_losses, train_accs, val_accs
 
 
 if __name__ == "__main__":
@@ -129,6 +135,9 @@ if __name__ == "__main__":
     test_loader = GraphDataLoader(
         test_dataset, batch_size=args.batch_size, shuffle=False
     )
+    print("Number of training samples: ", len(train_dataset))
+    print("Number of validation samples: ", len(val_dataset))
+    print("Number of test samples: ", len(test_dataset))
 
     # Create the model
     other_args = {"n_hidden": 64}
@@ -144,7 +153,9 @@ if __name__ == "__main__":
     # torch.nn.CrossEntropyLoss()
     # loss_fn = torch.nn.HingeEmbeddingLoss()
 
-    train_losses, val_losses = train(model, train_loader, optimizer, loss_fn)
+    train_losses, train_accs, val_accs = train(
+        model, train_loader, optimizer, loss_fn, val_loader
+    )
 
     # Save the model
     save_path = os.path.join(
@@ -155,12 +166,20 @@ if __name__ == "__main__":
     # Plot the losses
     sns.set_style("darkgrid")
     plt.plot(train_losses, label="Train loss")
-    plt.plot(val_losses, label="Validation loss")
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
     plt.legend()
 
     plt.savefig("losses.png")
+
+    plt.figure()
+    plt.plot(val_accs, label="Validation accuracy")
+    plt.plot(train_accs, label="Train accuracy")
+    plt.xlabel("Epoch")
+    plt.ylabel("Accuracy")
+    plt.legend()
+
+    plt.savefig("accuracy.png")
     plt.show()
 
     # Evaluate the model on the test set
