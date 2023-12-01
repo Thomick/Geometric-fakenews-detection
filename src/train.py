@@ -16,7 +16,7 @@ from dgl.dataloading import GraphDataLoader
 
 import model, evaluation
 from model import GCNFN, ModifiedGCNFN
-from evaluation import evaluate
+from evaluation import evaluate, evaluate_auc
 
 
 # Train the model for one epoch
@@ -59,8 +59,8 @@ def train(model, loader, optimizer, loss_fn, val_loader=None):
 
     for epoch in range(args.epochs):  # 100 by default
         train_loss = train_one_epoch(model, loader, optimizer, loss_fn)
-        val_acc = evaluate(model, val_loader)[0] if val_loader else None
-        train_acc = evaluate(model, loader)[0]
+        val_acc = evaluate(model, val_loader) if val_loader else None
+        train_acc = evaluate(model, loader)
 
         train_losses.append(train_loss)
         val_accs.append(val_acc)
@@ -187,7 +187,7 @@ if __name__ == "__main__":
     plt.savefig("losses.png")
 
     plt.figure()
-    test_acc = evaluate(model, test_loader)[0]
+    test_acc = evaluate(model, test_loader)
     print("Train accuracy: {:.4f}".format(train_accs[-1]))
     print("Validation accuracy: {:.4f}".format(val_accs[-1]))
     print("Test accuracy: {:.4f}".format(test_acc))
@@ -204,5 +204,6 @@ if __name__ == "__main__":
     plt.show()
 
     # Evaluate the model on the test set
-    acc = evaluate(dataset, model, test_loader)[0]
+    acc = evaluate(model, test_loader)
     print("Accuracy: {:.4f}".format(acc))
+    print("ROCAUC: {:.4f}".format(evaluate_auc(model, test_loader)))

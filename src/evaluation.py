@@ -22,34 +22,32 @@ def evaluate(model, loader):
     model.eval()
     dataset_size = len(loader.dataset)
     accuracy = 0
-    f1_macro = 0
-    f1_micro = 0
-    precision = 0
-    recall = 0
-
-    correct = 0
     for graph, labels in loader:
         size = labels.shape[0]
         features = graph.ndata["feat"]
         out = model(graph, features)
+        labels = labels.type(torch.LongTensor)
         if out.shape[-1] == 1:
             pred = (out > 0.5).long().squeeze()
         else:
             pred = out.argmax(dim=1)
 
         accuracy += accuracy_score(labels, pred) * size
-        f1_macro += f1_score(labels, pred, average="macro") * size
-        f1_micro += f1_score(labels, pred, average="micro") * size
-        precision += precision_score(labels, pred, zero_division=0) * size
-        recall += recall_score(labels, pred, zero_division=0) * size
 
-    return (
-        accuracy / dataset_size,
-        f1_macro / dataset_size,
-        f1_micro / dataset_size,
-        precision / dataset_size,
-        recall / dataset_size,
-    )
+    return accuracy / dataset_size
+
+
+def evaluate_auc(model, loader):
+    model.eval()
+    log_labels = []
+    log_out = []
+    for graph, labels in loader:
+        out = model(graph, graph.ndata["feat"])
+        log_labels += labels.tolist()
+        log_out += [x.item() for x in out]
+
+    auc = roc_auc_score(log_labels, log_out)
+    return auc
 
 
 if __name__ == "__main__":
@@ -68,7 +66,7 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-
+    """
     # Load the dataset
     path = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), "..", "data", "FakeNews"
@@ -84,4 +82,4 @@ if __name__ == "__main__":
 
     # Evaluate the model
     acc = evaluate(model, loader)[0]
-    print("Accuracy: {:.4f}".format(acc))
+    print("Accuracy: {:.4f}".format(acc))"""
