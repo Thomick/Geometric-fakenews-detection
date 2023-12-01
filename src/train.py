@@ -15,7 +15,7 @@ from dgl.data import FakeNewsDataset
 from dgl.dataloading import GraphDataLoader
 
 import model, evaluation
-from model import GCNFN, ModifiedGCNFN
+from model import GCNFN, ModifiedGCNFN, NoConvNet
 from evaluation import evaluate, evaluate_auc
 
 
@@ -159,7 +159,8 @@ if __name__ == "__main__":
     # dataset.feature.shape[1] renvoie le nombre de features
     # other_args["n_hidden"] renvoie le nombre de neurones de la première couche du réseau
     model = GCNFN(dataset.feature.shape[1], other_args["n_hidden"], dataset.num_classes)
-    model = ModifiedGCNFN(dataset.feature.shape[1], other_args["n_hidden"])
+    # model = ModifiedGCNFN(dataset.feature.shape[1], other_args["n_hidden"])
+    # model = NoConvNet(dataset.feature.shape[1], other_args["n_hidden"])
 
     # Train the model
     optimizer = torch.optim.Adam(model.parameters())

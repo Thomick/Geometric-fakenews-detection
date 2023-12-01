@@ -44,7 +44,7 @@ def evaluate_auc(model, loader):
     for graph, labels in loader:
         out = model(graph, graph.ndata["feat"])
         log_labels += labels.tolist()
-        log_out += [x.item() for x in out]
+        log_out += [x[-1].item() for x in out]
 
     auc = roc_auc_score(log_labels, log_out)
     return auc
