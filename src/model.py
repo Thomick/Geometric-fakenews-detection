@@ -22,7 +22,7 @@ os.environ["DGLBACKEND"] = "pytorch"
 
 
 class GCNFN(nn.Module):
-    def __init__(self, in_channels, n_hidden, n_classes):
+    def __init__(self, in_channels, n_hidden=64, n_classes=2):
         super(GCNFN, self).__init__()
         # print('n_hidden: ', n_hidden)
         # print('in_channels: ', in_channels)
@@ -67,7 +67,7 @@ class GCNFN(nn.Module):
 
 
 class ModifiedGCNFN(nn.Module):
-    def __init__(self, in_channels, n_hidden):
+    def __init__(self, in_channels, n_hidden=64):
         super(ModifiedGCNFN, self).__init__()
         self.conv1 = GATConv(in_channels, n_hidden, num_heads=1)
         self.conv2 = GATConv(n_hidden, n_hidden, num_heads=1)
@@ -84,3 +84,21 @@ class ModifiedGCNFN(nn.Module):
             x = self.avg_pool(g, x)
             x = self.selu(self.fc1(x))
             return F.sigmoid(self.fc2(x))
+
+
+class NoConvNet(nn.Module):
+    def __init__(self, in_channels, n_hidden=64):
+        super(NoConvNet, self).__init__()
+        self.fc1 = nn.Linear(in_channels, n_hidden)
+        self.fc2 = nn.Linear(n_hidden, n_hidden)
+        self.fc3 = nn.Linear(n_hidden, 1)
+        self.selu = nn.SELU()
+        self.avg_pool = AvgPooling()
+
+    def forward(self, g, x):
+        with g.local_scope():
+            x = x.float()
+            x = self.selu(self.fc1(x))
+            x = self.selu(self.fc2(x))
+            x = self.avg_pool(g, x)
+            return F.sigmoid(self.fc3(x))
