@@ -59,8 +59,8 @@ def train(model, loader, optimizer, loss_fn, val_loader=None):
 
     for epoch in range(args.epochs):  # 100 by default
         train_loss = train_one_epoch(model, loader, optimizer, loss_fn)
-        val_acc = evaluate(model, val_loader) if val_loader else None
-        train_acc = evaluate(model, loader)
+        val_acc = evaluate(model, val_loader)[0] if val_loader else None
+        train_acc = evaluate(model, loader)[0]
 
         train_losses.append(train_loss)
         val_accs.append(val_acc)
@@ -76,12 +76,21 @@ def train(model, loader, optimizer, loss_fn, val_loader=None):
 
 if __name__ == "__main__":
     default_epochs = 200
+    default_dataset = "politifact"
+    default_features = "content"
+
     parser = argparse.ArgumentParser(description="Experiments on our models")
     parser.add_argument(
         "--dataset",
         type=str,
-        default="politifact",
+        default=default_dataset,
         help="Dataset to use (politifact or gossipcop)",
+    )
+    parser.add_argument(
+        "--features",
+        type=str,
+        default=default_features,
+        help="Features to use (content, bert, spacy, profile)",
     )
     parser.add_argument(
         "--epochs",
@@ -178,7 +187,10 @@ if __name__ == "__main__":
     plt.savefig("losses.png")
 
     plt.figure()
-    test_acc = evaluate(model, test_loader)
+    test_acc = evaluate(model, test_loader)[0]
+    print("Train accuracy: {:.4f}".format(train_accs[-1]))
+    print("Validation accuracy: {:.4f}".format(val_accs[-1]))
+    print("Test accuracy: {:.4f}".format(test_acc))
     plt.plot(val_accs, label="Validation accuracy")
     plt.plot(train_accs, label="Train accuracy")
     plt.axhline(
@@ -192,5 +204,5 @@ if __name__ == "__main__":
     plt.show()
 
     # Evaluate the model on the test set
-    acc = evaluate(dataset, model, test_loader)
+    acc = evaluate(dataset, model, test_loader)[0]
     print("Accuracy: {:.4f}".format(acc))

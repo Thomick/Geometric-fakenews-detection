@@ -8,26 +8,48 @@ from dgl.dataloading import GraphDataLoader
 
 import torch
 
+from sklearn.metrics import (
+    f1_score,
+    accuracy_score,
+    recall_score,
+    precision_score,
+    roc_auc_score,
+    average_precision_score,
+)
+
 
 def evaluate(model, loader):
     model.eval()
+    dataset_size = len(loader.dataset)
+    accuracy = 0
+    f1_macro = 0
+    f1_micro = 0
+    precision = 0
+    recall = 0
 
     correct = 0
     for graph, labels in loader:
+        size = labels.shape[0]
         features = graph.ndata["feat"]
         out = model(graph, features)
         if out.shape[-1] == 1:
             pred = (out > 0.5).long().squeeze()
         else:
-            pred = out.argmax(
-                dim=1
-            )  # argmax returns the indices of the maximum values along an axis
+            pred = out.argmax(dim=1)
 
-        # print("pred shape : ", pred.shape)
-        # print("labels shape : ", labels.shape)
-        correct += int((pred == labels).sum())
+        accuracy += accuracy_score(labels, pred) * size
+        f1_macro += f1_score(labels, pred, average="macro") * size
+        f1_micro += f1_score(labels, pred, average="micro") * size
+        precision += precision_score(labels, pred, zero_division=0) * size
+        recall += recall_score(labels, pred, zero_division=0) * size
 
-    return correct / len(loader.dataset)
+    return (
+        accuracy / dataset_size,
+        f1_macro / dataset_size,
+        f1_micro / dataset_size,
+        precision / dataset_size,
+        recall / dataset_size,
+    )
 
 
 if __name__ == "__main__":
@@ -61,5 +83,5 @@ if __name__ == "__main__":
     model = torch.load(args.model_path)
 
     # Evaluate the model
-    acc = evaluate(model, loader)
+    acc = evaluate(model, loader)[0]
     print("Accuracy: {:.4f}".format(acc))
