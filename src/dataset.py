@@ -11,6 +11,7 @@ class DatasetManager:
             os.path.dirname(os.path.realpath(__file__)), "..", "data", "FakeNews"
         )
         self.dataset = FakeNewsDataset(dataset_name, features_name, self.path)
+        self.dataset.process()
         self.batch_size = batch_size
 
     def get_train_loader(self):

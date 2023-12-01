@@ -56,7 +56,7 @@ def train(model, loader, optimizer, loss_fn, val_loader=None):
     val_accs = []
     train_accs = []
     # Define tdqm progress bar
-    disable = True  # False
+    disable = False  # False
     pbar = tqdm.tqdm(range(args.epochs), disable=disable)
 
     for epoch in range(args.epochs):  # 100 by default
@@ -78,7 +78,7 @@ def train(model, loader, optimizer, loss_fn, val_loader=None):
 
 if __name__ == "__main__":
     default_epochs = 200
-    default_dataset = "gossipcop"
+    default_dataset = "politifact"
     default_features = "content"
 
     parser = argparse.ArgumentParser(description="Experiments on our models")
@@ -108,24 +108,25 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-
+    print(args.features)
     dm = DatasetManager(args.dataset, args.features, args.batch_size)
 
     # Create the data loaders
     train_loader = dm.get_train_loader()
     val_loader = dm.get_val_loader()
     test_loader = dm.get_test_loader()
-    print("Number of training samples: ", len(train_loader))
-    print("Number of validation samples: ", len(val_loader))
-    print("Number of test samples: ", len(test_loader))
+    print("Number of training samples: ", dm.dataset.train_mask.sum().item())
+    print("Number of validation samples: ", dm.dataset.val_mask.sum().item())
+    print("Number of test samples: ", dm.dataset.test_mask.sum().item())
+    print("Number of features: ", dm.get_num_features())
 
     # Create the model
 
     # print(dir(dataset))
     # dm.get_num_features renvoie le nombre de features
-    model = GCNFN(dm.get_num_features)
-    # model = ModifiedGCNFN(dm.get_num_features)
-    # model = NoConvNet(dm.get_num_features)
+    model = GCNFN(dm.get_num_features())
+    # model = ModifiedGCNFN(dm.get_num_features())
+    # model = NoConvNet(dm.get_num_features())
 
     # Train the model
     optimizer = torch.optim.Adam(model.parameters())
