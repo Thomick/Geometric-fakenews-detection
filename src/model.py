@@ -22,7 +22,7 @@ os.environ["DGLBACKEND"] = "pytorch"
 
 
 class GCNFN(nn.Module):
-    def __init__(self, in_channels, n_hidden, n_classes):
+    def __init__(self, in_channels, n_hidden=64, n_classes=2):
         super(GCNFN, self).__init__()
         # print('n_hidden: ', n_hidden)
         # print('in_channels: ', in_channels)
@@ -67,7 +67,7 @@ class GCNFN(nn.Module):
 
 
 class ModifiedGCNFN(nn.Module):
-    def __init__(self, in_channels, n_hidden):
+    def __init__(self, in_channels, n_hidden=64):
         super(ModifiedGCNFN, self).__init__()
         self.conv1 = GATConv(in_channels, n_hidden, num_heads=1)
         self.conv2 = GATConv(n_hidden, n_hidden, num_heads=1)
@@ -87,7 +87,7 @@ class ModifiedGCNFN(nn.Module):
 
 
 class NoConvNet(nn.Module):
-    def __init__(self, in_channels, n_hidden):
+    def __init__(self, in_channels, n_hidden=64):
         super(NoConvNet, self).__init__()
         self.fc1 = nn.Linear(in_channels, n_hidden)
         self.fc2 = nn.Linear(n_hidden, n_hidden)
