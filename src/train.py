@@ -76,11 +76,13 @@ def train(model, loader, optimizer, loss_fn, val_loader=None):
 
 if __name__ == "__main__":
     default_epochs = 200
+    default_feature = "profile"
+    default_dataset = "politifact" #gossipcop
     parser = argparse.ArgumentParser(description="Experiments on our models")
     parser.add_argument(
         "--dataset",
         type=str,
-        default="politifact",
+        default=default_dataset, 
         help="Dataset to use (politifact or gossipcop)",
     )
     parser.add_argument(
@@ -95,6 +97,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model_name", type=str, default="model.pt", help="Name of the model savefile"
     )
+    parser.add_argument(
+        "--features", type=str, default=default_feature, help="Features to use"
+    )
 
     args = parser.parse_args()
 
@@ -103,8 +108,10 @@ if __name__ == "__main__":
         os.path.dirname(os.path.realpath(__file__)), "..", "data", "FakeNews"
     )
 
-    dataset = FakeNewsDataset(args.dataset, "content", path)
-
+    dataset = FakeNewsDataset(args.dataset, args.features, path)
+    # print info about features 
+    print(dataset.feature.shape)
+    print(dataset.feature)
     # Split the dataset
 
     # transform dataset.train_mask to integers tensor
@@ -135,6 +142,8 @@ if __name__ == "__main__":
     train_loader = GraphDataLoader(
         train_dataset, batch_size=args.batch_size, shuffle=True
     )
+    #print the features dimension for one element
+    print(train_dataset[0][0].ndata['feat'].shape)
     val_loader = GraphDataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
     test_loader = GraphDataLoader(
         test_dataset, batch_size=args.batch_size, shuffle=False
@@ -150,7 +159,7 @@ if __name__ == "__main__":
     # dataset.feature.shape[1] renvoie le nombre de features
     # other_args["n_hidden"] renvoie le nombre de neurones de la première couche du réseau
     model = GCNFN(dataset.feature.shape[1], other_args["n_hidden"], dataset.num_classes)
-    model = ModifiedGCNFN(dataset.feature.shape[1], other_args["n_hidden"])
+    #model = ModifiedGCNFN(dataset.feature.shape[1], other_args["n_hidden"])
 
     # Train the model
     optimizer = torch.optim.Adam(model.parameters())
@@ -164,7 +173,7 @@ if __name__ == "__main__":
 
     # Save the model
     save_path = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), "..", "models", args.model_name
+        os.path.dirname(os.path.realpath(__file__)), "..", "models", args.features + "_" + args.model_name
     )
     torch.save(model, save_path)
 
@@ -181,16 +190,17 @@ if __name__ == "__main__":
     test_acc = evaluate(model, test_loader)
     plt.plot(val_accs, label="Validation accuracy")
     plt.plot(train_accs, label="Train accuracy")
-    plt.axhline(
-        y=test_acc, color="r", linestyle="-", label="Test accuracy(after training)"
-    )
+    #plt.axhline(
+    #    y=test_acc, color="r", linestyle="-", label="Test accuracy(after training)"
+    #)
     plt.xlabel("Epoch")
     plt.ylabel("Accuracy")
+    plt.title(f"Feature: {args.features}")
     plt.legend()
 
     plt.savefig("accuracy.png")
     plt.show()
 
     # Evaluate the model on the test set
-    acc = evaluate(dataset, model, test_loader)
+    acc = evaluate(model, test_loader)
     print("Accuracy: {:.4f}".format(acc))
