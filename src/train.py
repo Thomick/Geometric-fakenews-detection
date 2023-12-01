@@ -55,7 +55,8 @@ def train(model, loader, optimizer, loss_fn, val_loader=None):
     val_accs = []
     train_accs = []
     # Define tdqm progress bar
-    pbar = tqdm.tqdm(range(args.epochs))
+    disable = True  # False
+    pbar = tqdm.tqdm(range(args.epochs), disable=disable)
 
     for epoch in range(args.epochs):  # 100 by default
         train_loss = train_one_epoch(model, loader, optimizer, loss_fn)
@@ -76,7 +77,7 @@ def train(model, loader, optimizer, loss_fn, val_loader=None):
 
 if __name__ == "__main__":
     default_epochs = 200
-    default_dataset = "politifact"
+    default_dataset = "gossipcop"
     default_features = "content"
 
     parser = argparse.ArgumentParser(description="Experiments on our models")
