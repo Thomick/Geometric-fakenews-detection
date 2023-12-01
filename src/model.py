@@ -39,7 +39,6 @@ class GCNFN(nn.Module):
         # print data attributes
         # print(g.ndata)
         with g.local_scope():  # To avoid changes to the original graph
-            # print("x input shape: ", x.shape)
             # Layer 1 GatConv with SELU non linearity
             # turn x to float
             x = x.float()

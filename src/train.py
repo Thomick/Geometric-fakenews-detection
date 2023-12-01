@@ -78,8 +78,8 @@ def train(model, loader, optimizer, loss_fn, val_loader=None):
 
 if __name__ == "__main__":
     default_epochs = 200
-    default_dataset = "politifact"
-    default_features = "content"
+    default_dataset = "gossipcop"
+    default_feature = "profile"
 
     parser = argparse.ArgumentParser(description="Experiments on our models")
     parser.add_argument(
@@ -91,7 +91,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--features",
         type=str,
-        default=default_features,
+        default=default_feature,
         help="Features to use (content, bert, spacy, profile)",
     )
     parser.add_argument(
@@ -105,9 +105,6 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--model_name", type=str, default="model.pt", help="Name of the model savefile"
-    )
-    parser.add_argument(
-        "--features", type=str, default=default_feature, help="Features to use"
     )
 
     args = parser.parse_args()
@@ -154,7 +151,7 @@ if __name__ == "__main__":
     plt.ylabel("Loss")
     plt.legend()
 
-    plt.savefig("losses.png")
+    plt.savefig(f"../img/loss_{args.features}.png")
 
     plt.figure()
     test_acc = evaluate(model, test_loader)
@@ -171,7 +168,7 @@ if __name__ == "__main__":
     plt.title(f"Feature: {args.features}")
     plt.legend()
 
-    plt.savefig("accuracy.png")
+    plt.savefig(f"../img/accuracy_{args.features}.png")
     plt.show()
 
     # Evaluate the model on the test set
