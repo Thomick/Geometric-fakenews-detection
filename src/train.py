@@ -28,7 +28,6 @@ def train_one_epoch(model, train_loader, optimizer, loss_fn):
         labels,
     ) in train_loader:  # Unpack the graph and labels from your data list
         optimizer.zero_grad()
-        # features = dataset.feature[graph.ndata['_ID']]
         x = graph.ndata["feat"]
         out = model(graph, x)
         # print values and shape of out
@@ -50,7 +49,7 @@ def train_one_epoch(model, train_loader, optimizer, loss_fn):
 
 
 # Train the model
-def train(model, loader, optimizer, loss_fn, val_loader=None):
+def train(model, loader, optimizer, loss_fn, val_loader=None, scheduler=None):
     model.train()
     train_losses = []
     val_accs = []
@@ -68,9 +67,16 @@ def train(model, loader, optimizer, loss_fn, val_loader=None):
         val_accs.append(val_acc)
         train_accs.append(train_acc)
 
+        if scheduler:
+            scheduler.step()
         # Update the progress bar with the latest metrics
         pbar.set_postfix(
-            train_loss=train_loss, val_acc=val_acc, refresh=True, epoch=epoch
+            train_loss=train_loss,
+            train_acc=train_acc,
+            val_acc=val_acc,
+            refresh=True,
+            epoch=epoch,
+            lr=optimizer.param_groups[0]["lr"],
         )
         pbar.update()
     return train_losses, train_accs, val_accs
@@ -79,7 +85,8 @@ def train(model, loader, optimizer, loss_fn, val_loader=None):
 if __name__ == "__main__":
     default_epochs = 200
     default_dataset = "gossipcop"
-    default_feature = "profile"
+    default_feature = "content"
+    default_batch_size = 128
 
     parser = argparse.ArgumentParser(description="Experiments on our models")
     parser.add_argument(
@@ -101,7 +108,10 @@ if __name__ == "__main__":
         help="Number of epochs to train the model",
     )
     parser.add_argument(
-        "--batch_size", type=int, default=32, help="Batch size for the data loader"
+        "--batch_size",
+        type=int,
+        default=default_batch_size,
+        help="Batch size for the data loader",
     )
     parser.add_argument(
         "--model_name", type=str, default="model.pt", help="Name of the model savefile"
@@ -122,7 +132,6 @@ if __name__ == "__main__":
 
     # Create the model
 
-    # print(dir(dataset))
     # dm.get_num_features renvoie le nombre de features
     model = GCNFN(dm.get_num_features())
     # model = ModifiedGCNFN(dm.get_num_features())
@@ -130,17 +139,34 @@ if __name__ == "__main__":
 
     # Train the model
     optimizer = torch.optim.Adam(model.parameters())
+    scheduler = None
+    """torch.optim.lr_scheduler.SequentialLR(
+        optimizer,
+        schedulers=[
+            torch.optim.lr_scheduler.ConstantLR(optimizer, factor=1),
+            torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95),
+        ],
+        milestones=[args.epochs - 100],
+    )"""
     loss_fn = torch.nn.NLLLoss()
     # torch.nn.CrossEntropyLoss()
     # loss_fn = torch.nn.HingeEmbeddingLoss()
 
     train_losses, train_accs, val_accs = train(
-        model, train_loader, optimizer, loss_fn, val_loader
+        model, train_loader, optimizer, loss_fn, val_loader, scheduler
     )
 
     # Save the model
     save_path = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), "..", "models", args.features + "_" + args.model_name
+        os.path.dirname(os.path.realpath(__file__)),
+        "..",
+        "models",
+        args.features + "_" + args.model_name,
+    )
+    img_path = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        "..",
+        "img",
     )
     torch.save(model, save_path)
 
@@ -151,7 +177,7 @@ if __name__ == "__main__":
     plt.ylabel("Loss")
     plt.legend()
 
-    plt.savefig(f"../img/loss_{args.features}.png")
+    plt.savefig(os.path.join(img_path, f"loss_{args.features}.png"))
 
     plt.figure()
     test_acc = evaluate(model, test_loader)
@@ -160,15 +186,15 @@ if __name__ == "__main__":
     print("Test accuracy: {:.4f}".format(test_acc))
     plt.plot(val_accs, label="Validation accuracy")
     plt.plot(train_accs, label="Train accuracy")
-    #plt.axhline(
+    # plt.axhline(
     #    y=test_acc, color="r", linestyle="-", label="Test accuracy(after training)"
-    #)
+    # )
     plt.xlabel("Epoch")
     plt.ylabel("Accuracy")
     plt.title(f"Feature: {args.features}")
     plt.legend()
 
-    plt.savefig(f"../img/accuracy_{args.features}.png")
+    plt.savefig(os.path.join(img_path, f"accuracy_{args.features}.png"))
     plt.show()
 
     # Evaluate the model on the test set
