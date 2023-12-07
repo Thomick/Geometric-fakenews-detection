@@ -119,6 +119,10 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     print(args.features)
+
+    # Set the random seed for reproducible experiments
+    torch.manual_seed(0)
+
     dm = DatasetManager(args.dataset, args.features, args.batch_size)
 
     # Create the data loaders
