@@ -83,9 +83,9 @@ def train(model, loader, optimizer, loss_fn, val_loader=None, scheduler=None):
 
 
 if __name__ == "__main__":
-    default_epochs = 200
+    default_epochs = 800
     default_dataset = "gossipcop"
-    default_feature = "content"
+    default_feature = "bert"#"content"
     default_batch_size = 128
 
     parser = argparse.ArgumentParser(description="Experiments on our models")
@@ -129,6 +129,11 @@ if __name__ == "__main__":
     print("Number of validation samples: ", dm.dataset.val_mask.sum().item())
     print("Number of test samples: ", dm.dataset.test_mask.sum().item())
     print("Number of features: ", dm.get_num_features())
+    #print % selected for train valid and test
+    print("Percentage of training samples: ", dm.dataset.train_mask.sum().item()/dm.dataset.train_mask.shape[0])
+    print("Percentage of validation samples: ", dm.dataset.val_mask.sum().item()/dm.dataset.val_mask.shape[0])
+    print("Percentage of test samples: ", dm.dataset.test_mask.sum().item()/dm.dataset.test_mask.shape[0])
+    
 
     # Create the model
 
