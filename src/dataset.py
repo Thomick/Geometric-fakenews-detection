@@ -6,13 +6,14 @@ from dgl.dataloading import GraphDataLoader
 
 
 class DatasetManager:
-    def __init__(self, dataset_name, features_name, batch_size):
+    def __init__(self, dataset_name, features_name, no_features, batch_size):
         self.path = os.path.join(
             os.path.dirname(os.path.realpath(__file__)), "..", "data", "FakeNews"
         )
         self.dataset = FakeNewsDataset(dataset_name, features_name, self.path)
         self.dataset.process()
         self.batch_size = batch_size
+        self.no_features = no_features
 
     def get_train_loader(self):
         train_indices = torch.nonzero(self.dataset.train_mask).squeeze()
@@ -72,4 +73,7 @@ class DatasetManager:
         return self.dataset.labels
 
     def get_num_features(self):
-        return self.dataset.feature.shape[1]
+        if self.no_features:
+            return 1
+        else:
+            return self.dataset.feature.shape[1]

@@ -22,7 +22,7 @@ os.environ["DGLBACKEND"] = "pytorch"
 
 
 class GCNFN(nn.Module):
-    def __init__(self, in_channels, n_hidden=64, n_classes=2):
+    def __init__(self, in_channels, no_features, n_hidden=64, n_classes=2):
         super(GCNFN, self).__init__()
         # print('n_hidden: ', n_hidden)
         # print('in_channels: ', in_channels)
@@ -34,8 +34,14 @@ class GCNFN(nn.Module):
         self.fc2 = nn.Linear(int(n_hidden / 2), n_classes)
         self.selu = nn.SELU()
         self.log_softmax = nn.LogSoftmax(dim=1)
+        self.no_features = no_features
 
     def forward(self, g, x):
+        if self.no_features: 
+            # replace x by one
+            #print("x shape before replacing by ones", x.shape)
+            x = torch.ones((x.shape[0], 1))
+            #print("x shape after replacing by ones", x.shape)
         # print data attributes
         # print(g.ndata)
         with g.local_scope():  # To avoid changes to the original graph

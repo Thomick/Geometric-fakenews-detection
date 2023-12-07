@@ -83,10 +83,11 @@ def train(model, loader, optimizer, loss_fn, val_loader=None, scheduler=None):
 
 
 if __name__ == "__main__":
-    default_epochs = 800
+    default_epochs = 200
     default_dataset = "gossipcop"
-    default_feature = "bert"#"content"
+    default_feature = "profile"
     default_batch_size = 128
+    default_no_features = False
 
     parser = argparse.ArgumentParser(description="Experiments on our models")
     parser.add_argument(
@@ -101,6 +102,12 @@ if __name__ == "__main__":
         default=default_feature,
         help="Features to use (content, bert, spacy, profile)",
     )
+    parser.add_argument(
+        "--no_features",
+        type = bool,
+        default=default_no_features,
+        help="If true, no features are used",
+    )        
     parser.add_argument(
         "--epochs",
         type=int,
@@ -118,12 +125,11 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-    print(args.features)
-
-    # Set the random seed for reproducible experiments
-    torch.manual_seed(0)
-
-    dm = DatasetManager(args.dataset, args.features, args.batch_size)
+    if args.no_features is False: 
+        print(args.features)
+    else: 
+        print("No features")
+    dm = DatasetManager(args.dataset, args.features, args.no_features, args.batch_size)
 
     # Create the data loaders
     train_loader = dm.get_train_loader()
@@ -133,16 +139,11 @@ if __name__ == "__main__":
     print("Number of validation samples: ", dm.dataset.val_mask.sum().item())
     print("Number of test samples: ", dm.dataset.test_mask.sum().item())
     print("Number of features: ", dm.get_num_features())
-    #print % selected for train valid and test
-    print("Percentage of training samples: ", dm.dataset.train_mask.sum().item()/dm.dataset.train_mask.shape[0])
-    print("Percentage of validation samples: ", dm.dataset.val_mask.sum().item()/dm.dataset.val_mask.shape[0])
-    print("Percentage of test samples: ", dm.dataset.test_mask.sum().item()/dm.dataset.test_mask.shape[0])
-    
 
     # Create the model
 
     # dm.get_num_features renvoie le nombre de features
-    model = GCNFN(dm.get_num_features())
+    model = GCNFN(dm.get_num_features(), args.no_features)
     # model = ModifiedGCNFN(dm.get_num_features())
     # model = NoConvNet(dm.get_num_features())
 
@@ -200,7 +201,10 @@ if __name__ == "__main__":
     # )
     plt.xlabel("Epoch")
     plt.ylabel("Accuracy")
-    plt.title(f"Feature: {args.features}")
+    if args.no_features is False: 
+        plt.title(f"Feature: {args.features}")
+    else:
+        plt.title("No features")
     plt.legend()
 
     plt.savefig(os.path.join(img_path, f"accuracy_{args.features}.png"))
