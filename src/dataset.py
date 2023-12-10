@@ -58,7 +58,10 @@ class DatasetManager:
         return test_loader
 
     def assign_features(self, graph, features):
-        graph_features = features[graph.ndata["_ID"]]
+        if self.no_features:
+            graph_features = torch.ones((graph.ndata["_ID"].shape[0], 1))
+        else:
+            graph_features = features[graph.ndata["_ID"]]
         graph.ndata["feat"] = graph_features
         graph = dgl.add_self_loop(graph)
         return graph

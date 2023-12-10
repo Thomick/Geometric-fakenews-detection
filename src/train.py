@@ -16,7 +16,7 @@ from dgl.dataloading import GraphDataLoader
 
 import model, evaluation
 from dataset import DatasetManager
-from model import GCNFN, ModifiedGCNFN, NoConvNet
+from model import GCNFN, ModifiedGCNFN, NoConvNet, NoAttentionNet
 from evaluation import evaluate, evaluate_auc
 
 
@@ -83,7 +83,7 @@ def train(model, loader, optimizer, loss_fn, val_loader=None, scheduler=None):
 
 
 if __name__ == "__main__":
-    default_epochs = 200
+    default_epochs = 600
     default_dataset = "gossipcop"
     default_feature = "profile"
     default_batch_size = 128
@@ -104,10 +104,10 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--no_features",
-        type = bool,
+        type=bool,
         default=default_no_features,
         help="If true, no features are used",
-    )        
+    )
     parser.add_argument(
         "--epochs",
         type=int,
@@ -125,9 +125,9 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-    if args.no_features is False: 
+    if args.no_features is False:
         print(args.features)
-    else: 
+    else:
         print("No features")
     dm = DatasetManager(args.dataset, args.features, args.no_features, args.batch_size)
 
@@ -146,6 +146,7 @@ if __name__ == "__main__":
     model = GCNFN(dm.get_num_features(), args.no_features)
     # model = ModifiedGCNFN(dm.get_num_features())
     # model = NoConvNet(dm.get_num_features())
+    # model = NoAttentionNet(dm.get_num_features())
 
     # Train the model
     optimizer = torch.optim.Adam(model.parameters())
@@ -201,7 +202,7 @@ if __name__ == "__main__":
     # )
     plt.xlabel("Epoch")
     plt.ylabel("Accuracy")
-    if args.no_features is False: 
+    if args.no_features is False:
         plt.title(f"Feature: {args.features}")
     else:
         plt.title("No features")
