@@ -21,6 +21,7 @@ import os
 os.environ["DGLBACKEND"] = "pytorch"
 
 
+# Original GCNFN model
 class GCNFN(nn.Module):
     def __init__(self, in_channels, no_features, n_hidden=64, n_classes=2):
         super(GCNFN, self).__init__()
@@ -35,16 +36,8 @@ class GCNFN(nn.Module):
         self.no_features = no_features
 
     def forward(self, g, x):
-        if self.no_features:
-            # replace x by one
-            # print("x shape before replacing by ones", x.shape)
-            x = torch.ones((x.shape[0], 1))
-            # print("x shape after replacing by ones", x.shape)
-        # print data attributes
-        # print(g.ndata)
         with g.local_scope():  # To avoid changes to the original graph
             # Layer 1 GatConv with SELU non linearity
-            # turn x to float
             x = x.float()
             x = self.selu(self.conv1(g, x).squeeze(1))  # dimension: 32,N,64
 
@@ -62,6 +55,7 @@ class GCNFN(nn.Module):
             return self.log_softmax(x)  # .transpose(1,0)
 
 
+# Simplified model with scalar output and possibility to use mean or attention pooling
 class ModifiedGCNFN(nn.Module):
     def __init__(self, in_channels, n_hidden=64):
         super(ModifiedGCNFN, self).__init__()
@@ -83,16 +77,20 @@ class ModifiedGCNFN(nn.Module):
             return F.sigmoid(self.fc2(x))
 
 
+# Model without graph attention layer and normalization (Can learn using only the graph structure and no features)
 class NoAttentionNet(nn.Module):
-    def __init__(self, in_channels, n_hidden=64):
+    def __init__(self, in_channels, n_hidden=64, pooling="attention"):
         super(NoAttentionNet, self).__init__()
         self.conv1 = GraphConv(in_channels, n_hidden, norm="none")
         self.conv2 = GraphConv(n_hidden, n_hidden, norm="none")
         self.fc1 = nn.Linear(n_hidden, int(n_hidden / 2))
         self.fc2 = nn.Linear(int(n_hidden / 2), 1)
         self.selu = nn.SELU()
-        self.pooling_gate = nn.Linear(n_hidden, 1)
-        self.pooling = AvgPooling()
+        if pooling == "mean":
+            self.pooling = AvgPooling()
+        elif pooling == "attention":
+            self.pooling_gate = nn.Linear(n_hidden, 1)
+            self.pooling = GlobalAttentionPooling(self.pooling_gate)
 
     def forward(self, g, x):
         with g.local_scope():
@@ -104,6 +102,7 @@ class NoAttentionNet(nn.Module):
             return F.sigmoid(self.fc2(x))
 
 
+# Model without graph convolutional layers. Does not make use of the relations between nodes
 class NoConvNet(nn.Module):
     def __init__(self, in_channels, n_hidden=64, pooling="attention"):
         super(NoConvNet, self).__init__()

@@ -30,11 +30,6 @@ def train_one_epoch(model, train_loader, optimizer, loss_fn):
         optimizer.zero_grad()
         x = graph.ndata["feat"]
         out = model(graph, x)
-        # print values and shape of out
-        # print(out.shape)
-        # print(out)
-        # turn labels into -1 and 1
-        # labels = torch.where(labels == 0, -1, labels)
 
         if out.shape[-1] == 1:
             out = out.squeeze()
@@ -140,6 +135,14 @@ if __name__ == "__main__":
     print("Number of test samples: ", dm.dataset.test_mask.sum().item())
     print("Number of features: ", dm.get_num_features())
 
+    # compute number of elements of each class
+    print("Number of elements of each class in train set")
+    print(dm.dataset.train_mask.sum(dim=0))
+    print("Number of elements of each class in val set")
+    print(dm.dataset.val_mask.sum(dim=0))
+    print("Number of elements of each class in test set")
+    print(dm.dataset.test_mask.sum(dim=0))
+
     # Create the model
 
     # dm.get_num_features renvoie le nombre de features
@@ -181,6 +184,13 @@ if __name__ == "__main__":
     )
     torch.save(model, save_path)
 
+    # Evaluate the model
+    test_acc = evaluate(model, test_loader)
+    print("Train accuracy: {:.4f}".format(train_accs[-1]))
+    print("Validation accuracy: {:.4f}".format(val_accs[-1]))
+    print("Test accuracy: {:.4f}".format(test_acc))
+    print("ROCAUC: {:.4f}".format(evaluate_auc(model, test_loader)))
+
     # Plot the losses
     sns.set_style("darkgrid")
     plt.plot(train_losses, label="Train loss")
@@ -191,10 +201,7 @@ if __name__ == "__main__":
     plt.savefig(os.path.join(img_path, f"loss_{args.features}.png"))
 
     plt.figure()
-    test_acc = evaluate(model, test_loader)
-    print("Train accuracy: {:.4f}".format(train_accs[-1]))
-    print("Validation accuracy: {:.4f}".format(val_accs[-1]))
-    print("Test accuracy: {:.4f}".format(test_acc))
+
     plt.plot(val_accs, label="Validation accuracy")
     plt.plot(train_accs, label="Train accuracy")
     # plt.axhline(
@@ -210,8 +217,3 @@ if __name__ == "__main__":
 
     plt.savefig(os.path.join(img_path, f"accuracy_{args.features}.png"))
     plt.show()
-
-    # Evaluate the model on the test set
-    acc = evaluate(model, test_loader)
-    print("Accuracy: {:.4f}".format(acc))
-    print("ROCAUC: {:.4f}".format(evaluate_auc(model, test_loader)))
