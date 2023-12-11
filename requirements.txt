@@ -1,3 +1,8 @@
-torch
-torch_geometric
-dgl
+dgl==1.1.2
+matplotlib==3.8.0
+networkx==3.2
+numpy==1.26.1
+pandas==2.1.2
+seaborn==0.13.0
+torch==2.1.0
+tqdm==4.66.1
